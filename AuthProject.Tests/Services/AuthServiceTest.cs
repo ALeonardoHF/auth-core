@@ -10,12 +10,14 @@ public class AuthServiceTests
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepo = new();
     private readonly Mock<IPasswordHasher> _hasher = new();
     private readonly Mock<ITokenService> _tokenService = new();
+    private readonly Mock<IAuditLogRepository> _auditLogRepo = new();
     private readonly AuthService _sut;
 
     public AuthServiceTests()
     {
         var settings = Options.Create(new JwtSettings { RefreshTokenExpirationDays = 7 });
-        _sut = new AuthService(_userRepo.Object, _refreshTokenRepo.Object, _hasher.Object, _tokenService.Object, settings);
+        _auditLogRepo.Setup(r => r.AddAsync(It.IsAny<AuditLog>())).Returns(Task.CompletedTask);
+        _sut = new AuthService(_userRepo.Object, _refreshTokenRepo.Object, _hasher.Object, _tokenService.Object, settings, _auditLogRepo.Object);
     }
 
     [Fact]
