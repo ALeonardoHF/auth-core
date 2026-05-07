@@ -1,0 +1,21 @@
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "Admin123!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: "Server=db;Database=AuthProject;User Id=sa;Password=Admin123!;TrustServerCertificate=True;"
+      JwtSettings__Secret: "AuthProject_SuperSecret_2026_CambiaEsto!"
+      JwtSettings__Issuer: "AuthProject"
+      JwtSettings__Audience: "AuthProject"
+    depends_on:
+      - db

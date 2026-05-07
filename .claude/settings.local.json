@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet restore *)",
+      "Bash(dotnet script *)",
+      "Bash(dotnet fsi *)",
+      "Bash(powershell -command \"Add-Type -Path 'c:/Github/Login/AuthProject.Api/bin/Debug/net9.0/Microsoft.OpenApi.dll'; [Microsoft.OpenApi.Models.OpenApiSecurityScheme] | Select-Object FullName\")",
+      "Bash(powershell -command '[System.Reflection.Assembly]::LoadFrom\\('\\\\''c:/Github/Login/AuthProject.Api/bin/Debug/net9.0/Microsoft.OpenApi.dll'\\\\''\\).GetTypes\\(\\) | Where-Object { $_.Name -match '\\\\''Security'\\\\'' } | Select-Object -ExpandProperty FullName | Select-Object -First 10')",
+      "Bash(powershell -command \"Get-ChildItem -Path 'C:\\\\Users\\\\leona\\\\.nuget\\\\packages\\\\microsoft.openapi\\\\2.4.1\\\\lib' -Recurse -Filter '*.dll' | Select-Object FullName\")",
+      "Bash(powershell -command '[System.Reflection.Assembly]::LoadFrom\\('\\\\''C:\\\\Users\\\\leona\\\\.nuget\\\\packages\\\\microsoft.openapi\\\\2.4.1\\\\lib\\\\net8.0\\\\Microsoft.OpenApi.dll'\\\\''\\).GetExportedTypes\\(\\) | Where-Object { $_.Name -match '\\\\''Security'\\\\'' } | Select-Object -ExpandProperty FullName')",
+      "Bash(dotnet new *)",
+      "Bash(mkdir -p c:/Github/Login/AuthProject.Tests/Services c:/Github/Login/AuthProject.Tests/Domain)",
+      "Bash(rm c:/Github/Login/AuthProject.Tests/UnitTest1.cs)",
+      "PowerShell([System.Environment]::SetEnvironmentVariable\\(\"JwtSettings__Secret\", \"AuthProject_SuperSecret_2026_CambiaEsto!\", \"User\"\\))",
+      "PowerShell([System.Environment]::GetEnvironmentVariable\\(\"JwtSettings__Secret\", \"User\"\\))"
+    ]
+  }
+}
