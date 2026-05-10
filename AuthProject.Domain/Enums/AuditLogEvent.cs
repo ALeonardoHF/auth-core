@@ -5,5 +5,12 @@ public enum AuditLogEvent
     AccountLocked,
     TokenRefreshed,
     Logout,
-    LogoutAllDevices
+    LogoutAllDevices,
+    PasswordResetRequested,
+    PasswordResetCompleted,
+    TwoFactorSetup,
+    TwoFactorSuccess,
+    TwoFactorFailed,
+    EmailConfirmed,
+    UserRegistered
 }

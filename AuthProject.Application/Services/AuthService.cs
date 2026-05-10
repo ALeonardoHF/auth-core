@@ -13,6 +13,8 @@ public class AuthService : IAuthService
     private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
     private readonly IEmailService _emailService;
     private readonly string _baseUrl;
+    private readonly ITotpService _totpService;
+
 
     public AuthService(
         IUserRepository userRepository,
@@ -24,7 +26,8 @@ public class AuthService : IAuthService
         IPasswordResetTokenRepository passwordResetTokenRepository,
         IAuditLogRepository auditLogRepository,
         IEmailService emailService,
-        IConfiguration config)
+        IConfiguration config,
+        ITotpService totpService)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -36,6 +39,7 @@ public class AuthService : IAuthService
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _emailService = emailService;
         _baseUrl = config["AppSettings:BaseUrl"]!;
+        _totpService = totpService;
     }
 
     public async Task<LoginResponse> LoginAsync(
@@ -82,12 +86,8 @@ public class AuthService : IAuthService
         // actualizar los intentos a 0 y la fecha de locked a null
         user.ResetLoginAttempts();
         await _userRepository.UpdateAsync(user);
-        await _auditLogRepository.AddAsync(AuditLog.Create(
-                AuditLogEvent.LoginSuccess,
-                userId: user.Id,
-                email: user.Email,
-                ipAddress: ipAddress,
-                deviceInfo: deviceInfo));
+        if (user.IsTwoFactorEnabled)
+            return new LoginResponse(true, user.Email, null);
 
         var jwt = _tokenService.GenerateJwt(user);
         var rawRefreshToken = _tokenService.GenerateRefreshToken();
@@ -101,12 +101,18 @@ public class AuthService : IAuthService
 
         await _refreshTokenRepository.AddAsync(refreshToken);
 
-        
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.LoginSuccess,
+            userId: user.Id,
+            email: user.Email,
+            ipAddress: ipAddress,
+            deviceInfo: deviceInfo));
 
-        return new LoginResponse(jwt, rawRefreshToken, user.Role.ToString());
+        return new LoginResponse(false, null, new AuthResponse(jwt, rawRefreshToken, user.Role.ToString()));
+
     }
 
-    public async Task<LoginResponse> RefreshAsync(
+    public async Task<AuthResponse> RefreshAsync(
         string refreshToken, string? deviceInfo, string? ipAddress)
     {
         var existing = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
@@ -141,7 +147,7 @@ public class AuthService : IAuthService
             ipAddress: ipAddress,
             deviceInfo: deviceInfo));
 
-        return new LoginResponse(jwt, rawRefreshToken, user.Role.ToString());
+        return new AuthResponse(jwt, rawRefreshToken, user.Role.ToString());
     }
 
     public async Task LogoutAsync(string refreshToken)
@@ -193,6 +199,11 @@ public class AuthService : IAuthService
 
         await _userRepository.UpdateAsync(user);
         await _confirmationTokenRepository.UpdateAsync(confirmationToken);
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.EmailConfirmed,
+            userId: user.Id,
+            email: user.Email));
+
     }
 
     public async Task ForgotPasswordAsync(string email)
@@ -202,6 +213,11 @@ public class AuthService : IAuthService
 
         var token = PasswordResetToken.Create(user.Id);
         await _passwordResetTokenRepository.AddAsync(token);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.PasswordResetRequested,
+            userId: user.Id,
+            email: user.Email));
 
         var link = $"{_baseUrl}/auth/reset-password?token={token.Token}";
         await _emailService.SendPasswordResetEmailAsync(user.Email, link);
@@ -223,6 +239,64 @@ public class AuthService : IAuthService
 
         await _userRepository.UpdateAsync(user);
         await _passwordResetTokenRepository.UpdateAsync(resetToken);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.PasswordResetCompleted,
+            userId: user.Id,
+            email: user.Email));
+
     }
+
+    public async Task<TwoFactorSetupResponse> SetupTwoFactorAsync(Guid userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado.");
+
+        var secret = _totpService.GenerateSecret();
+        var qrBase64 = _totpService.GenerateQrCodeBase64(user.Email, secret);
+
+        user.EnableTwoFactor(secret);
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorSetup,
+            userId: user.Id,
+            email: user.Email));
+
+        return new TwoFactorSetupResponse(qrBase64, secret);
+    }
+
+    public async Task<AuthResponse> VerifyTwoFactorAsync(string email, string code, string? deviceInfo, string? ipAddress)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user is null || !user.IsTwoFactorEnabled)
+            throw new UnauthorizedException("2FA no configurado.");
+
+        if (!_totpService.Verify(user.TotpSecret!, code))
+        {
+            await _auditLogRepository.AddAsync(AuditLog.Create(
+                AuditLogEvent.TwoFactorFailed,
+                userId: user.Id,
+                email: user.Email,
+                ipAddress: ipAddress,
+                deviceInfo: deviceInfo));
+            throw new UnauthorizedException("Código inválido.");
+        }
+
+        var jwt = _tokenService.GenerateJwt(user);
+        var rawRefreshToken = _tokenService.GenerateRefreshToken();
+        var token = RefreshToken.Create(user.Id, rawRefreshToken, _jwtSettings.RefreshTokenExpirationDays, deviceInfo, ipAddress);
+        await _refreshTokenRepository.AddAsync(token);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorSuccess,
+            userId: user.Id,
+            email: user.Email,
+            ipAddress: ipAddress,
+            deviceInfo: deviceInfo));
+
+        return new AuthResponse(jwt, rawRefreshToken, user.Role.ToString());
+    }
+
 
 }

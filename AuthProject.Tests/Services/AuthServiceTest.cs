@@ -16,6 +16,8 @@ public class AuthServiceTests
     private readonly Mock<IPasswordResetTokenRepository> _passwordResetTokenRepo = new();
     private readonly Mock<IEmailService> _emailServiceMock = new();
     private readonly Mock<IConfiguration> _configMock = new();
+    private readonly Mock<ITotpService> _totpService = new();
+
 
     private readonly AuthService _sut;
 
@@ -34,7 +36,8 @@ public class AuthServiceTests
             _passwordResetTokenRepo.Object,
             _auditLogRepo.Object,
             _emailServiceMock.Object,
-            _configMock.Object);
+            _configMock.Object,
+            _totpService.Object);
     }
 
     [Fact]
@@ -104,9 +107,10 @@ public class AuthServiceTests
 
         var result = await _sut.LoginAsync(new LoginRequest("leo@test.com", "hash"), null, null);
         
-        result.AccessToken.Should().Be("jwt-falso");
-        result.RefreshToken.Should().Be("refresh-falso");
-        result.Role.Should().Be("Client");
+        result.Auth!.AccessToken.Should().Be("jwt-falso");
+        result.Auth!.RefreshToken.Should().Be("refresh-falso");
+        result.Auth!.Role.Should().Be("Client");
+
     }
 
     [Fact]

@@ -99,5 +99,63 @@ namespace AuthProject.Controllers
             return Content(EmailTemplates.PasswordResetSuccess(), "text/html");
         }
 
+        [Authorize]
+        [HttpPost("2fa/setup")]
+        public async Task<IActionResult> SetupTwoFactor()
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var result = await _authService.SetupTwoFactorAsync(userId);
+            return Ok(result);
+        }
+
+        [HttpPost("2fa/verify")]
+        public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest request)
+        {
+            var deviceInfo = Request.Headers["User-Agent"].ToString();
+            var ipAddress  = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result     = await _authService.VerifyTwoFactorAsync(request.Email, request.Code, deviceInfo, ipAddress);
+            return Ok(result);
+        }
+
+        [Authorize]
+        [HttpGet("2fa/setup-page")]
+        public async Task<IActionResult> SetupTwoFactorPage()
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            var result = await _authService.SetupTwoFactorAsync(userId);
+            
+            var html = $"""
+                <!DOCTYPE html>
+                <html>
+                <head><meta charset="utf-8"></head>
+                <body style="margin:0;padding:0;background-color:#1A0A2E;font-family:Arial,sans-serif;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                    <td align="center" style="padding:40px 20px;">
+                        <table width="520" cellpadding="0" cellspacing="0" style="background-color:#0D0D0D;border-radius:16px;overflow:hidden;border:1px solid #6B3FA0;">
+                        <tr>
+                            <td style="background:linear-gradient(135deg,#1A0A2E,#6B3FA0);padding:40px;text-align:center;">
+                            <div style="font-size:48px;">👻</div>
+                            <h1 style="color:#C9A8E0;font-size:26px;margin:12px 0 0;">AuthCore — 2FA Setup</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:40px;text-align:center;">
+                            <p style="color:#F2C4B8;margin:0 0 20px;">Escanea este QR con Google Authenticator</p>
+                            <img src="data:image/png;base64,{result.QrCodeBase64}" style="border-radius:8px;" />
+                            <p style="color:#9B6DC5;font-size:12px;margin:20px 0 0;">Código manual: <strong style="color:#C9A8E0;">{result.ManualCode}</strong></p>
+                            </td>
+                        </tr>
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </body>
+                </html>
+                """;
+            
+            return Content(html, "text/html");
+        }
+
     }
 }

@@ -12,6 +12,7 @@ public class UserServiceTests
     private readonly Mock<IPasswordHasher> _hasher = new();
     private readonly Mock<IEmailConfirmationTokenRepository> _confirmationTokenRepo = new();
     private readonly Mock<IEmailService> _emailService = new();
+    private readonly Mock<IAuditLogRepository> _auditLogRepo = new();
     private readonly UserService _sut;
 
 
@@ -28,7 +29,9 @@ public class UserServiceTests
             _hasher.Object,
             _confirmationTokenRepo.Object,
             _emailService.Object,
-            config);
+            config,
+            _auditLogRepo.Object);
+
     }
 
 

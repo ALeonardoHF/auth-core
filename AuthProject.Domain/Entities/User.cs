@@ -13,6 +13,8 @@ public class User
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockedUntil { get; private set; }
     public bool IsEmailConfirmed { get; private set; }
+    public string? TotpSecret { get; private set; }
+    public bool IsTwoFactorEnabled { get; private set; }
 
 
     private readonly List<RefreshToken> _refreshTokens = new();
@@ -84,5 +86,17 @@ public class User
     public void ConfirmEmail() => IsEmailConfirmed = true;
 
     public void ChangePassword(string newHash) => PasswordHash = newHash;
+
+    public void EnableTwoFactor(string secret)
+    {
+        TotpSecret = secret;
+        IsTwoFactorEnabled = true;
+    }
+
+    public void DisableTwoFactor()
+    {
+        TotpSecret = null;
+        IsTwoFactorEnabled = false;
+    }
 
 }

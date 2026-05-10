@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ITokenService, JwtTokenService>();
         // services.AddScoped<IEmailService, SendGridEmailService>(); // Cambio a gmail, SendGrid tarda en autenticar mails y luego no los manda
         services.AddScoped<IEmailService, GmailEmailService>();
+        services.AddScoped<ITotpService, TotpService>();
 
         var jwtSettings = config.GetSection("JwtSettings").Get<JwtSettings>()!;
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

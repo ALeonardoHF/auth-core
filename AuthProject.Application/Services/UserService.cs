@@ -7,19 +7,23 @@ public class UserService : IUserService
     private readonly IEmailConfirmationTokenRepository _confirmationTokenRepository;
     private readonly IEmailService _emailService;
     private readonly string _baseUrl;
+    private readonly IAuditLogRepository _auditLogRepository;
+
 
     public UserService(
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         IEmailConfirmationTokenRepository confirmationTokenRepository,
         IEmailService emailService,
-        IConfiguration config)
+        IConfiguration config,
+        IAuditLogRepository auditLogRepository)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _confirmationTokenRepository = confirmationTokenRepository;
         _emailService = emailService;
         _baseUrl = config["AppSettings:BaseUrl"]!;
+        _auditLogRepository = auditLogRepository;
     }
 
 
@@ -38,6 +42,11 @@ public class UserService : IUserService
         var link = $"{_baseUrl}/auth/confirm-email?token={confirmationToken.Token}";
 
         await _emailService.SendConfirmationEmailAsync(user.Email, link);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.UserRegistered,
+            userId: user.Id,
+            email: user.Email));
 
         return ToResponse(user);
     }

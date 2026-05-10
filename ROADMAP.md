@@ -39,7 +39,7 @@
 |--------|-----|---------|
 | ✅ | Confirmación de email | Verificar que el email existe antes de activar cuenta |
 | ✅ | Reset de password | Flujo estándar via email |
-| ⬜ | 2FA | Segunda capa de seguridad |
+| ✅ | 2FA | Segunda capa de seguridad |
 | ⬜ | Monitoreo de errores | Sentry — te avisa cuando algo explota en prod |
 | ✅ | CI/CD | GitHub Actions que corre los tests antes de deployar |
 
