@@ -1,13 +1,27 @@
+using Microsoft.Extensions.Configuration;
+
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IEmailConfirmationTokenRepository _confirmationTokenRepository;
+    private readonly IEmailService _emailService;
+    private readonly string _baseUrl;
 
-    public UserService(IUserRepository userRepository, IPasswordHasher passwordHasher)
+    public UserService(
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
+        IEmailConfirmationTokenRepository confirmationTokenRepository,
+        IEmailService emailService,
+        IConfiguration config)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _confirmationTokenRepository = confirmationTokenRepository;
+        _emailService = emailService;
+        _baseUrl = config["AppSettings:BaseUrl"]!;
     }
+
 
     public async Task<UserResponse> CreateAsync(CreateUserRequest request)
     {
@@ -17,6 +31,13 @@ public class UserService : IUserService
         var hash = _passwordHasher.Hash(request.Password);
         var user = User.Create(request.Email, hash, request.Role);
         await _userRepository.AddAsync(user);
+
+        var confirmationToken = EmailConfirmationToken.Create(user.Id);
+        await _confirmationTokenRepository.AddAsync(confirmationToken);
+
+        var link = $"{_baseUrl}/auth/confirm-email?token={confirmationToken.Token}";
+
+        await _emailService.SendConfirmationEmailAsync(user.Email, link);
 
         return ToResponse(user);
     }

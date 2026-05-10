@@ -50,5 +50,54 @@ namespace AuthProject.Controllers
             await _authService.LogoutAllDevicesAsync(userId);
             return NoContent();
         }
+
+        [HttpGet("confirm-email")]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string token)
+        {
+            await _authService.ConfirmEmailAsync(token);
+            return Content(EmailTemplates.ConfirmationSuccess(), "text/html");
+        }
+
+        [HttpGet("email-preview/confirmation")]
+        public IActionResult PreviewConfirmationEmail()
+        {
+            var fakeLink = "http://localhost:5000/auth/confirm-email?token=PREVIEW";
+            var html = EmailTemplates.Confirmation(fakeLink);
+            return Content(html, "text/html");
+        }
+
+        [HttpGet("email-preview/confirmation-success")]
+        public IActionResult PreviewConfirmationSuccess()
+        {
+            return Content(EmailTemplates.ConfirmationSuccess(), "text/html");
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            await _authService.ForgotPasswordAsync(request.Email);
+            return Ok("Si el email existe recibirás un link para restablecer tu contraseña.");
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+            return Ok("Contraseña restablecida correctamente.");
+        }
+
+        [HttpGet("reset-password")]
+        public IActionResult ResetPasswordForm([FromQuery] string token)
+        {
+            return Content(EmailTemplates.ResetPasswordForm(token), "text/html");
+        }
+
+        [HttpPost("reset-password-form")]
+        public async Task<IActionResult> ResetPasswordForm([FromForm] string token, [FromForm] string newPassword)
+        {
+            await _authService.ResetPasswordAsync(token, newPassword);
+            return Content(EmailTemplates.PasswordResetSuccess(), "text/html");
+        }
+
     }
 }

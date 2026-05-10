@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -11,13 +12,29 @@ public class AuthServiceTests
     private readonly Mock<IPasswordHasher> _hasher = new();
     private readonly Mock<ITokenService> _tokenService = new();
     private readonly Mock<IAuditLogRepository> _auditLogRepo = new();
+    private readonly Mock<IEmailConfirmationTokenRepository> _confirmationTokenRepo = new();
+    private readonly Mock<IPasswordResetTokenRepository> _passwordResetTokenRepo = new();
+    private readonly Mock<IEmailService> _emailServiceMock = new();
+    private readonly Mock<IConfiguration> _configMock = new();
+
     private readonly AuthService _sut;
 
     public AuthServiceTests()
     {
         var settings = Options.Create(new JwtSettings { RefreshTokenExpirationDays = 7 });
         _auditLogRepo.Setup(r => r.AddAsync(It.IsAny<AuditLog>())).Returns(Task.CompletedTask);
-        _sut = new AuthService(_userRepo.Object, _refreshTokenRepo.Object, _hasher.Object, _tokenService.Object, settings, _auditLogRepo.Object);
+        _configMock.Setup(c => c["AppSettings:BaseUrl"]).Returns("http://localhost:5000");
+        _sut = new AuthService(
+            _userRepo.Object,
+            _refreshTokenRepo.Object,
+            _hasher.Object,
+            _tokenService.Object,
+            settings,
+            _confirmationTokenRepo.Object,
+            _passwordResetTokenRepo.Object,
+            _auditLogRepo.Object,
+            _emailServiceMock.Object,
+            _configMock.Object);
     }
 
     [Fact]
@@ -67,6 +84,7 @@ public class AuthServiceTests
     public async Task Login_Correcto()
     {
         var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.ConfirmEmail();
 
         _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);

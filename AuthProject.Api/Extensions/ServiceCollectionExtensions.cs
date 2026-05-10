@@ -18,6 +18,8 @@ public static class ServiceCollectionExtensions
         services.Configure<JwtSettings>(config.GetSection("JwtSettings"));
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<ITokenService, JwtTokenService>();
+        // services.AddScoped<IEmailService, SendGridEmailService>(); // Cambio a gmail, SendGrid tarda en autenticar mails y luego no los manda
+        services.AddScoped<IEmailService, GmailEmailService>();
 
         var jwtSettings = config.GetSection("JwtSettings").Get<JwtSettings>()!;
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -48,6 +50,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+
         return services;
     }
 }

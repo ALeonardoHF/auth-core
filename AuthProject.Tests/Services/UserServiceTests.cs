@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
+using Microsoft.Extensions.Configuration;
+
 
 namespace AuthProject.Tests.Services;
 
@@ -8,12 +10,27 @@ public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepo = new();
     private readonly Mock<IPasswordHasher> _hasher = new();
+    private readonly Mock<IEmailConfirmationTokenRepository> _confirmationTokenRepo = new();
+    private readonly Mock<IEmailService> _emailService = new();
     private readonly UserService _sut;
+
 
     public UserServiceTests()
     {
-        _sut = new UserService(_userRepo.Object, _hasher.Object);
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> {
+                { "AppSettings:BaseUrl", "http://localhost:5000" }
+            })
+            .Build();
+
+        _sut = new UserService(
+            _userRepo.Object,
+            _hasher.Object,
+            _confirmationTokenRepo.Object,
+            _emailService.Object,
+            config);
     }
+
 
     [Fact]
     public async Task CreateAsync_EmailDuplicado_LanzaDomainException()
@@ -39,6 +56,12 @@ public class UserServiceTests
             .Returns(Task.CompletedTask);
 
         var result = await _sut.CreateAsync(new CreateUserRequest("leo@test.com", "pass123", Role.Client));
+
+        _confirmationTokenRepo.Setup(r => r.AddAsync(It.IsAny<EmailConfirmationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _emailService.Setup(s => s.SendConfirmationEmailAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
 
         result.Email.Should().Be("leo@test.com");
         result.Role.Should().Be("Client");

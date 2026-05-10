@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 
 public class AuthService : IAuthService
 {
@@ -8,6 +9,10 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokenService;
     private readonly JwtSettings _jwtSettings;
     private readonly IAuditLogRepository _auditLogRepository;
+    private readonly IEmailConfirmationTokenRepository _confirmationTokenRepository;
+    private readonly IPasswordResetTokenRepository _passwordResetTokenRepository;
+    private readonly IEmailService _emailService;
+    private readonly string _baseUrl;
 
     public AuthService(
         IUserRepository userRepository,
@@ -15,7 +20,11 @@ public class AuthService : IAuthService
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
         IOptions<JwtSettings> jwtSettings,
-        IAuditLogRepository auditLogRepository)
+        IEmailConfirmationTokenRepository confirmationTokenRepository,
+        IPasswordResetTokenRepository passwordResetTokenRepository,
+        IAuditLogRepository auditLogRepository,
+        IEmailService emailService,
+        IConfiguration config)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
@@ -23,6 +32,10 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _jwtSettings = jwtSettings.Value;
         _auditLogRepository = auditLogRepository;
+        _confirmationTokenRepository = confirmationTokenRepository;
+        _passwordResetTokenRepository = passwordResetTokenRepository;
+        _emailService = emailService;
+        _baseUrl = config["AppSettings:BaseUrl"]!;
     }
 
     public async Task<LoginResponse> LoginAsync(
@@ -61,7 +74,9 @@ public class AuthService : IAuthService
                 
             throw new UnauthorizedException("Invalid credentials.");
         }
-            
+        
+        if (!user.IsEmailConfirmed)
+                throw new UnauthorizedException("Debes confirmar tu email antes de iniciar sesión.");
 
         user.RecordLogin();
         // actualizar los intentos a 0 y la fecha de locked a null
@@ -162,4 +177,52 @@ public class AuthService : IAuthService
             userId: userId));
 
     }
+
+    public async Task ConfirmEmailAsync(string token)
+    {
+        var confirmationToken = await _confirmationTokenRepository.GetByTokenAsync(token);
+
+        if (confirmationToken is null || !confirmationToken.IsValid)
+            throw new UnauthorizedException("Token inválido o expirado.");
+
+        var user = await _userRepository.GetByIdAsync(confirmationToken.UserId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado.");
+
+        user.ConfirmEmail();
+        confirmationToken.MarkAsUsed();
+
+        await _userRepository.UpdateAsync(user);
+        await _confirmationTokenRepository.UpdateAsync(confirmationToken);
+    }
+
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user is null || !user.IsActive) return;
+
+        var token = PasswordResetToken.Create(user.Id);
+        await _passwordResetTokenRepository.AddAsync(token);
+
+        var link = $"{_baseUrl}/auth/reset-password?token={token.Token}";
+        await _emailService.SendPasswordResetEmailAsync(user.Email, link);
+    }
+
+    public async Task ResetPasswordAsync(string token, string newPassword)
+    {
+        var resetToken = await _passwordResetTokenRepository.GetByTokenAsync(token);
+        if (resetToken is null || !resetToken.IsValid)
+            throw new UnauthorizedException("Token inválido o expirado.");
+
+        var user = await _userRepository.GetByIdAsync(resetToken.UserId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado.");
+
+        var newHash = _passwordHasher.Hash(newPassword);
+        user.ChangePassword(newHash);
+
+        resetToken.MarkAsUsed();
+
+        await _userRepository.UpdateAsync(user);
+        await _passwordResetTokenRepository.UpdateAsync(resetToken);
+    }
+
 }

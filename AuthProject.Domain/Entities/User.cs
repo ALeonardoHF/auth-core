@@ -12,6 +12,8 @@ public class User
     public bool IsDeleted { get; private set; }
     public int FailedLoginAttempts { get; private set; }
     public DateTime? LockedUntil { get; private set; }
+    public bool IsEmailConfirmed { get; private set; }
+
 
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
@@ -36,7 +38,8 @@ public class User
           CreatedAt = DateTime.UtcNow,
           IsDeleted = false,
           FailedLoginAttempts = 0,
-          LockedUntil = null
+          LockedUntil = null,
+          IsEmailConfirmed = false
         };
     }
 
@@ -77,5 +80,9 @@ public class User
     }
 
     public bool IsLocked() => LockedUntil > DateTime.UtcNow;
+
+    public void ConfirmEmail() => IsEmailConfirmed = true;
+
+    public void ChangePassword(string newHash) => PasswordHash = newHash;
 
 }
