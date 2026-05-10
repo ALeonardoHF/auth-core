@@ -15,7 +15,8 @@
       "Bash(rm c:/Github/Login/AuthProject.Tests/UnitTest1.cs)",
       "PowerShell([System.Environment]::SetEnvironmentVariable\\(\"JwtSettings__Secret\", \"AuthProject_SuperSecret_2026_CambiaEsto!\", \"User\"\\))",
       "PowerShell([System.Environment]::GetEnvironmentVariable\\(\"JwtSettings__Secret\", \"User\"\\))",
-      "Bash(dotnet test *)"
+      "Bash(dotnet test *)",
+      "Bash(docker compose *)"
     ]
   }
 }

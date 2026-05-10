@@ -33,6 +33,9 @@ public class ExceptionMiddleware
             _                     => 500
         };
 
+        if (statusCode == 500)
+            SentrySdk.CaptureException(ex);
+
         var title = statusCode switch
         {
             400 => "Bad Request",

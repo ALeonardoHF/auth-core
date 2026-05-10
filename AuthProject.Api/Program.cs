@@ -18,12 +18,12 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        Name         = "Authorization",
-        Type         = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme       = "Bearer",
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
         BearerFormat = "JWT",
-        In           = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description  = "Pega solo el JWT — el prefijo Bearer se agrega automáticamente."
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Pega solo el JWT — el prefijo Bearer se agrega automáticamente."
     });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
@@ -58,20 +58,20 @@ builder.Services.AddSwaggerGen(options =>
 //Builder RateLimiter para banea por IP
 builder.Services.AddRateLimiter(options =>
 {
-   options.AddPolicy<string>("login", httpContext =>
-   
-      RateLimitPartition.GetFixedWindowLimiter(
-        partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        factory: _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 5,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0   
-        }
-      )
-   );
+    options.AddPolicy<string>("login", httpContext =>
 
-   options.RejectionStatusCode = 429;
+       RateLimitPartition.GetFixedWindowLimiter(
+         partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+         factory: _ => new FixedWindowRateLimiterOptions
+         {
+             PermitLimit = 5,
+             Window = TimeSpan.FromMinutes(1),
+             QueueLimit = 0
+         }
+       )
+    );
+
+    options.RejectionStatusCode = 429;
 });
 
 builder.Services.AddApplication();
@@ -84,19 +84,26 @@ var allowedOrigins = builder.Configuration
 
 builder.Services.AddCors(options =>
 {
-   options.AddPolicy("Frontend", policy =>
-   {
-    
+    options.AddPolicy("Frontend", policy =>
+    {
+
         if (builder.Environment.IsDevelopment())
             policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
         else
             policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
 
-   }); 
+    });
 });
 
 builder.Services.AddHealthChecks()
     .AddSqlServer(builder.Configuration.GetConnectionString("Default")!);
+
+builder.WebHost.UseSentry(o =>
+{
+    o.Dsn = builder.Configuration["Sentry:Dsn"]!;
+    o.TracesSampleRate = 1.0;
+    o.Debug = false;
+});
 
 var app = builder.Build();
 

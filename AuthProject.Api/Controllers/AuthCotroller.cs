@@ -20,8 +20,8 @@ namespace AuthProject.Controllers
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var ipAddress  = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var result     = await _authService.LoginAsync(request, deviceInfo, ipAddress);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await _authService.LoginAsync(request, deviceInfo, ipAddress);
             return Ok(result);
         }
 
@@ -29,8 +29,8 @@ namespace AuthProject.Controllers
         public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest request)
         {
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var ipAddress  = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var result     = await _authService.RefreshAsync(request.RefreshToken, deviceInfo, ipAddress);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await _authService.RefreshAsync(request.RefreshToken, deviceInfo, ipAddress);
             return Ok(result);
         }
 
@@ -112,8 +112,8 @@ namespace AuthProject.Controllers
         public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest request)
         {
             var deviceInfo = Request.Headers["User-Agent"].ToString();
-            var ipAddress  = HttpContext.Connection.RemoteIpAddress?.ToString();
-            var result     = await _authService.VerifyTwoFactorAsync(request.Email, request.Code, deviceInfo, ipAddress);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await _authService.VerifyTwoFactorAsync(request.Email, request.Code, deviceInfo, ipAddress);
             return Ok(result);
         }
 
@@ -123,7 +123,7 @@ namespace AuthProject.Controllers
         {
             var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
             var result = await _authService.SetupTwoFactorAsync(userId);
-            
+
             var html = $"""
                 <!DOCTYPE html>
                 <html>
@@ -153,7 +153,7 @@ namespace AuthProject.Controllers
                 </body>
                 </html>
                 """;
-            
+
             return Content(html, "text/html");
         }
 
