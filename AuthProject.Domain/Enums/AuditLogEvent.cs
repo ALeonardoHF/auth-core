@@ -12,5 +12,8 @@ public enum AuditLogEvent
     TwoFactorSuccess,
     TwoFactorFailed,
     EmailConfirmed,
-    UserRegistered
+    UserRegistered,
+    TwoFactorDisabled,
+    TwoFactorRecoveryRequested,
+    TwoFactorRecoveryCompleted
 }

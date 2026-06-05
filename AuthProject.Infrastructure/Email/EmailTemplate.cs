@@ -1,6 +1,6 @@
 public static class EmailTemplates
 {
-    public static string ConfirmationSuccess() => """
+  public static string ConfirmationSuccess() => """
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"></head>
@@ -43,7 +43,7 @@ public static class EmailTemplates
         </html>
         """;
 
-    public static string Confirmation(string confirmationLink) => $"""
+  public static string Confirmation(string confirmationLink) => $"""
         <!DOCTYPE html>
         <html>
         <head><meta charset="utf-8"></head>
@@ -93,7 +93,7 @@ public static class EmailTemplates
         </html>
         """;
 
-    public static string PasswordReset(string resetLink) => $"""
+  public static string PasswordReset(string resetLink) => $"""
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"></head>
@@ -143,7 +143,7 @@ public static class EmailTemplates
     </html>
     """;
 
-    public static string ResetPasswordForm(string token) => $"""
+  public static string ResetPasswordForm(string token) => $"""
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"><title>Restablecer contraseña</title></head>
@@ -198,7 +198,7 @@ public static class EmailTemplates
     </html>
     """;
 
-    public static string PasswordResetSuccess() => """
+  public static string PasswordResetSuccess() => """
     <!DOCTYPE html>
     <html>
     <head><meta charset="utf-8"></head>
@@ -240,5 +240,39 @@ public static class EmailTemplates
     </body>
     </html>
     """;
+
+  public static string TwoFactorRecovery(string recoveryLink) => $"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin:0;padding:0;background-color:#1A0A2E;font-family:Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+        <td align="center" style="padding:40px 20px;">
+            <table width="520" cellpadding="0" cellspacing="0" style="background-color:#0D0D0D;border-radius:16px;overflow:hidden;border:1px solid #6B3FA0;">
+            <tr>
+                <td style="background:linear-gradient(135deg,#1A0A2E,#6B3FA0);padding:40px;text-align:center;">
+                <div style="font-size:48px;">🔐</div>
+                <h1 style="color:#C9A8E0;font-size:26px;margin:12px 0 0;">Recuperación de 2FA</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:40px;text-align:center;">
+                <p style="color:#F2C4B8;font-size:15px;margin:0 0 12px;">Recibimos una solicitud para desactivar la autenticación de dos factores en tu cuenta.</p>
+                <p style="color:#9B6DC5;font-size:14px;margin:0 0 32px;">Si no fuiste tú, ignora este correo. Tu cuenta sigue protegida.</p>
+                <a href="{recoveryLink}" style="background:linear-gradient(135deg,#6B3FA0,#9B6DC5);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:bold;display:inline-block;">
+                    Desactivar 2FA
+                </a>
+                <p style="color:#6B3FA0;font-size:12px;margin:24px 0 0;">Este enlace expira en 1 hora.</p>
+                </td>
+            </tr>
+            </table>
+        </td>
+        </tr>
+    </table>
+    </body>
+    </html>
+    """;
+
 
 }

@@ -1,0 +1,1 @@
+public record VerifyTwoFactorCodeRequest(string Code);

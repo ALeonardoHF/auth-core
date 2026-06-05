@@ -18,8 +18,11 @@ services:
       JwtSettings__Issuer: "AuthProject"
       JwtSettings__Audience: "AuthProject"
       AppSettings__BaseUrl: "${BASE_URL}"
-      Gmail__Email: "${GMAIL_EMAIL}"
-      Gmail__AppPassword: "${GMAIL_APP_PASSWORD}"
+      Smtp__Host: "${SMTP_HOST}"
+      Smtp__Port: "${SMTP_PORT}"
+      Smtp__User: "${SMTP_USER}"
+      Smtp__Pass: "${SMTP_PASS}"
+      Smtp__From: "${SMTP_FROM}"
       Sentry__Dsn: "${SENTRY_DSN}"
     depends_on:
       - db

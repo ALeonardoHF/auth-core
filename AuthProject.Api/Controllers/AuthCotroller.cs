@@ -157,5 +157,30 @@ namespace AuthProject.Controllers
             return Content(html, "text/html");
         }
 
+        [Authorize]
+        [HttpPost("2fa/disable")]
+        public async Task<IActionResult> DisableTwoFactor([FromBody] VerifyTwoFactorCodeRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _authService.DisableTwoFactorAsync(userId, request.Code);
+            return Ok("2FA desactivado correctamente.");
+        }
+
+        [Authorize]
+        [HttpPost("2fa/recovery/request")]
+        public async Task<IActionResult> RequestTwoFactorRecovery([FromBody] ForgotPasswordRequest request)
+        {
+            await _authService.RequestTwoFactorRecoveryAsync(request.Email);
+            return Ok("Si el email existe recibirás un link para recuperar el acceso.");
+        }
+
+        [Authorize]
+        [HttpPost("wfa/recovery/confirm")]
+        public async Task<IActionResult> ConfirmTwiFactorRecovery([FromBody] TwoFactorRecoveryConfirmRequest request)
+        {
+            await _authService.ConfirmTwoFactorRecoveryAsync(request.Token, request.Password);
+            return Ok("2FA desactivado. Ya puedes iniciar sesión normalmente.");
+        }
+
     }
 }

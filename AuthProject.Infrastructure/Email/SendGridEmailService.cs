@@ -48,4 +48,8 @@ public class SendGridEmailService : IEmailService
             throw new Exception($"SendGrid error {response.StatusCode}: {body}");
         }
     }
+
+    public Task SendTwoFactorRecoveryEmailAsync(string toEmail, string recoveryLink)
+    => throw new NotImplementedException();
+
 }

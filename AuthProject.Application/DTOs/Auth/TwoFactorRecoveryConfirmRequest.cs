@@ -1,0 +1,1 @@
+public record TwoFactorRecoveryConfirmRequest(string Token, string Password);

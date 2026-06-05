@@ -298,5 +298,73 @@ public class AuthService : IAuthService
         return new AuthResponse(jwt, rawRefreshToken, user.Role.ToString());
     }
 
+    public async Task DisableTwoFactorAsync(Guid userId, string code)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado");
+
+        if (!user.IsTwoFactorEnabled)
+            throw new DomainException("El 2FA no está activado.");
+        
+        if (!_totpService.Verify(user.TotpSecret!, code))
+        {
+            await _auditLogRepository.AddAsync(AuditLog.Create(
+                AuditLogEvent.TwoFactorFailed,
+                userId: user.Id,
+                email: user.Email));
+            
+            throw new UnauthorizedAccessException("Código inválido.");
+        }
+
+        user.DisableTwoFactor();
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorDisabled,
+            userId: user.Id,
+            email: user.Email));
+    }
+
+    public async Task RequestTwoFactorRecoveryAsync(string email)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user is null || !user.IsActive) return;
+
+        var token = PasswordResetToken.Create(user.Id);
+        await _passwordResetTokenRepository.AddAsync(token);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorRecoveryRequested,
+            userId: user.Id,
+            email: user.Email));
+
+        var link = $"{_baseUrl}/auth/2fa/recovery/confirm?token={token.Token}";
+        await _emailService.SendTwoFactorRecoveryEmailAsync(user.Email, link);
+    }
+
+    public async Task ConfirmTwoFactorRecoveryAsync(string token, string password)
+    {
+        var resetToken = await _passwordResetTokenRepository.GetByTokenAsync(token);
+        if (resetToken is null || !resetToken.IsValid)
+            throw new UnauthorizedAccessException("Token inválido o expirado");
+
+        var user = await _userRepository.GetByIdAsync(resetToken.UserId);
+        if (user is null) throw new NotFoundException("Contraseña incorrecta.");
+
+        if (!_passwordHasher.Verify(password, user.PasswordHash))
+            throw new UnauthorizedException("Contraseña incorrecta.");
+
+        user.DisableTwoFactor();
+        resetToken.MarkAsUsed();
+
+        await _userRepository.UpdateAsync(user);
+        await _passwordResetTokenRepository.UpdateAsync(resetToken);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorRecoveryCompleted,
+            userId: user.Id,
+            email: user.Email));
+    }
+
 
 }

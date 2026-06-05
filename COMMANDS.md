@@ -65,6 +65,19 @@ docker compose build api
 docker compose up -d --build
 ```
 
+## SQL Server en Docker
+
+```bash
+# Ver nombre del contenedor de la BD
+docker ps
+
+# Entrar al SQL Server de Docker
+docker exec -it login-db-1 /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "Admin123!" -C
+
+# Ver logs de la BD
+docker compose logs db --tail=50
+```
+
 ## SQL útiles
 
 ```sql
@@ -84,14 +97,24 @@ SELECT * FROM RefreshTokens ORDER BY CreatedAt DESC
 ## Endpoints principales
 
 ```
-POST   /users                          Crear usuario
-GET    /users/{id}                     Obtener usuario
-GET    /users                          Obtener todos los usuarios
-POST   /auth/login                     Login
-POST   /auth/refresh                   Renovar token
-POST   /auth/logout                    Logout
+POST   /users                          Registro de usuario
+GET    /users/me                       Datos del usuario autenticado (JWT)
+GET    /users                          Todos los usuarios (Admin)
+POST   /auth/login                     Login → { requiresTwoFactor, email, auth }
+POST   /auth/refresh                   Renovar tokens
+POST   /auth/logout                    Logout (JWT)
+POST   /auth/logout-all                Logout todos los dispositivos (JWT)
 GET    /auth/confirm-email?token=XYZ   Confirmar email
+POST   /auth/forgot-password           Solicitar reset de contraseña
+POST   /auth/reset-password            Resetear contraseña con token
+GET    /auth/reset-password?token=XYZ  Formulario HTML para reset
+POST   /auth/2fa/setup                 Activar 2FA → QR + manualCode (JWT)
+GET    /auth/2fa/setup-page            Página HTML con QR (JWT)
+POST   /auth/2fa/verify                Verificar código TOTP → tokens
 GET    /health                         Health check
+POST   /auth/2fa/disable                Desactivar 2FA (JWT + código TOTP)
+POST   /auth/2fa/recovery/request       Solicitar recovery por email
+POST   /auth/2fa/recovery/confirm       Confirmar recovery (token + password)
 ```
 
 ## ngrok (tunnel para pruebas móvil/externas)
