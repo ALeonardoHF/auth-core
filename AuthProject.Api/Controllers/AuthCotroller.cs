@@ -166,7 +166,6 @@ namespace AuthProject.Controllers
             return Ok("2FA desactivado correctamente.");
         }
 
-        [Authorize]
         [HttpPost("2fa/recovery/request")]
         public async Task<IActionResult> RequestTwoFactorRecovery([FromBody] ForgotPasswordRequest request)
         {
@@ -174,8 +173,7 @@ namespace AuthProject.Controllers
             return Ok("Si el email existe recibirás un link para recuperar el acceso.");
         }
 
-        [Authorize]
-        [HttpPost("wfa/recovery/confirm")]
+        [HttpPost("2fa/recovery/confirm")]
         public async Task<IActionResult> ConfirmTwiFactorRecovery([FromBody] TwoFactorRecoveryConfirmRequest request)
         {
             await _authService.ConfirmTwoFactorRecoveryAsync(request.Token, request.Password);
