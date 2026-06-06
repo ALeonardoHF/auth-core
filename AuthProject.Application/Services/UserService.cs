@@ -65,5 +65,5 @@ public class UserService : IUserService
     }
 
     private static UserResponse ToResponse(User user) =>
-        new(user.Id, user.Email, user.Role.ToString(), user.IsActive, user.CreatedAt);
+        new(user.Id, user.Email, user.Role.ToString(), user.IsActive, user.CreatedAt, user.IsTwoFactorEnabled);
 }
