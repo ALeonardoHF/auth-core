@@ -1,6 +1,6 @@
 public enum Role
 {
-    Client = 1,
+    Admin = 1,
     Helper = 2,
-    Admin = 3
+    Client = 3
 }
