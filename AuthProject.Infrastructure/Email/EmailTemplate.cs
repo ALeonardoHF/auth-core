@@ -274,5 +274,74 @@ public static class EmailTemplates
     </html>
     """;
 
+  public static string TwoFactorRecoveryForm(string token) => $"""
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin:0;padding:0;background-color:#1A0A2E;font-family:Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+        <td align="center" style="padding:40px 20px;">
+            <table width="520" cellpadding="0" cellspacing="0" style="background-color:#0D0D0D;border-radius:16px;overflow:hidden;border:1px solid #6B3FA0;">
+            <tr>
+                <td style="background:linear-gradient(135deg,#1A0A2E,#6B3FA0);padding:40px;text-align:center;">
+                <div style="font-size:48px;">🔐</div>
+                <h1 style="color:#C9A8E0;font-size:26px;margin:12px 0 0;">Desactivar 2FA</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:40px;">
+                <form method="post" action="/auth/2fa/recovery/confirm-form">
+                    <input type="hidden" name="token" value="{token}" />
+                    <div style="margin-bottom:20px;">
+                    <label style="color:#C9A8E0;font-size:14px;display:block;margin-bottom:8px;">Contraseña actual</label>
+                    <input type="password" name="password" required
+                        style="width:100%;padding:12px;border-radius:8px;border:1px solid #6B3FA0;background:#1A0A2E;color:#fff;font-size:14px;box-sizing:border-box;" />
+                    </div>
+                    <button type="submit"
+                    style="width:100%;background:linear-gradient(135deg,#6B3FA0,#9B6DC5);color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;">
+                    Desactivar 2FA
+                    </button>
+                </form>
+                </td>
+            </tr>
+            </table>
+        </td>
+        </tr>
+    </table>
+    </body>
+    </html>
+    """;
+
+  public static string TwoFactorRecoverySuccess() => """
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"></head>
+    <body style="margin:0;padding:0;background-color:#1A0A2E;font-family:Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+        <td align="center" style="padding:40px 20px;">
+            <table width="520" cellpadding="0" cellspacing="0" style="background-color:#0D0D0D;border-radius:16px;overflow:hidden;border:1px solid #6B3FA0;">
+            <tr>
+                <td style="background:linear-gradient(135deg,#1A0A2E,#6B3FA0);padding:40px;text-align:center;">
+                <div style="font-size:48px;">✅</div>
+                <h1 style="color:#C9A8E0;font-size:26px;margin:12px 0 0;">2FA Desactivado</h1>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:40px;text-align:center;">
+                <p style="color:#F2C4B8;font-size:15px;">Tu autenticación de dos factores ha sido desactivada correctamente.</p>
+                <p style="color:#9B6DC5;font-size:14px;">Ya puedes iniciar sesión normalmente.</p>
+                </td>
+            </tr>
+            </table>
+        </td>
+        </tr>
+    </table>
+    </body>
+    </html>
+    """;
+
+
 
 }

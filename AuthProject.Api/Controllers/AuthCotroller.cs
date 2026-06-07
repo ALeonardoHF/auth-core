@@ -180,5 +180,18 @@ namespace AuthProject.Controllers
             return Ok("2FA desactivado. Ya puedes iniciar sesión normalmente.");
         }
 
+        [HttpGet("2fa/recovery/confirm")]
+        public IActionResult TwoFactorRecoveryForm([FromQuery] string token)
+        {
+            return Content(EmailTemplates.TwoFactorRecoveryForm(token), "text/html");
+        }
+
+        [HttpPost("2fa/recovery/confirm-form")]
+        public async Task<IActionResult> TwoFactorRecoveryConfirmForm([FromForm] string token, [FromForm] string password)
+        {
+            await _authService.ConfirmTwoFactorRecoveryAsync(token, password);
+            return Content(EmailTemplates.TwoFactorRecoverySuccess(), "text/html");
+        }
+
     }
 }
