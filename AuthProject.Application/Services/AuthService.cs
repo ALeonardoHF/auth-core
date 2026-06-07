@@ -48,7 +48,7 @@ public class AuthService : IAuthService
         var user = await _userRepository.GetByEmailAsync(request.Email);
 
         // verificar si esta bloqueado el usuario
-        if(user?.IsLocked() == true)
+        if (user?.IsLocked() == true)
         {
             await _auditLogRepository.AddAsync(AuditLog.Create(
                 AuditLogEvent.AccountLocked,
@@ -57,13 +57,13 @@ public class AuthService : IAuthService
                 ipAddress: ipAddress,
                 deviceInfo: deviceInfo,
                 details: $"Bloqueado hasta {user.LockedUntil}"));
-            
+
             throw new UnauthorizedException($"Cuenta bloqueada hasta {user.LockedUntil}");
         }
 
         if (user is null || !user.IsActive || !_passwordHasher.Verify(request.Password, user.PasswordHash))
         {
-            if(user != null && !_passwordHasher.Verify(request.Password, user.PasswordHash))
+            if (user != null && !_passwordHasher.Verify(request.Password, user.PasswordHash))
             {
                 await _auditLogRepository.AddAsync(AuditLog.Create(
                 AuditLogEvent.LoginFailed,
@@ -71,16 +71,16 @@ public class AuthService : IAuthService
                 email: user.Email,
                 ipAddress: ipAddress,
                 deviceInfo: deviceInfo,
-                details: $"Intento {user.FailedLoginAttempts + 1, 5} de 5"));
+                details: $"Intento {user.FailedLoginAttempts + 1,5} de 5"));
                 user.RegisterFailedLogin();
                 await _userRepository.UpdateAsync(user);
             }
-                
+
             throw new UnauthorizedException("Invalid credentials.");
         }
-        
+
         if (!user.IsEmailConfirmed)
-                throw new UnauthorizedException("Debes confirmar tu email antes de iniciar sesión.");
+            throw new UnauthorizedException("Debes confirmar tu email antes de iniciar sesión.");
 
         user.RecordLogin();
         // actualizar los intentos a 0 y la fecha de locked a null
@@ -255,7 +255,7 @@ public class AuthService : IAuthService
         var secret = _totpService.GenerateSecret();
         var qrBase64 = _totpService.GenerateQrCodeBase64(user.Email, secret);
 
-        user.EnableTwoFactor(secret);
+        user.SetPendingTotpSecret(secret);
         await _userRepository.UpdateAsync(user);
 
         await _auditLogRepository.AddAsync(AuditLog.Create(
@@ -265,6 +265,7 @@ public class AuthService : IAuthService
 
         return new TwoFactorSetupResponse(qrBase64, secret);
     }
+
 
     public async Task<AuthResponse> VerifyTwoFactorAsync(string email, string code, string? deviceInfo, string? ipAddress)
     {
@@ -305,14 +306,14 @@ public class AuthService : IAuthService
 
         if (!user.IsTwoFactorEnabled)
             throw new DomainException("El 2FA no está activado.");
-        
+
         if (!_totpService.Verify(user.TotpSecret!, code))
         {
             await _auditLogRepository.AddAsync(AuditLog.Create(
                 AuditLogEvent.TwoFactorFailed,
                 userId: user.Id,
                 email: user.Email));
-            
+
             throw new UnauthorizedAccessException("Código inválido.");
         }
 
@@ -362,6 +363,32 @@ public class AuthService : IAuthService
 
         await _auditLogRepository.AddAsync(AuditLog.Create(
             AuditLogEvent.TwoFactorRecoveryCompleted,
+            userId: user.Id,
+            email: user.Email));
+    }
+
+    public async Task EnableTwoFactorAsync(Guid userId, string code)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado.");
+
+        if (string.IsNullOrEmpty(user.PendingTotpSecret))
+            throw new DomainException("No hay configuración de 2FA pendiente.");
+
+        if (!_totpService.Verify(user.PendingTotpSecret, code))
+        {
+            await _auditLogRepository.AddAsync(AuditLog.Create(
+                AuditLogEvent.TwoFactorFailed,
+                userId: user.Id,
+                email: user.Email));
+            throw new UnauthorizedException("Código inválido.");
+        }
+
+        user.EnableTwoFactor();
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.TwoFactorEnabled,
             userId: user.Id,
             email: user.Email));
     }

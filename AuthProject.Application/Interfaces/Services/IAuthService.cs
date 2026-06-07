@@ -8,6 +8,7 @@ public interface IAuthService
     Task ForgotPasswordAsync(string email);
     Task ResetPasswordAsync(string token, string newPassword);
     Task<TwoFactorSetupResponse> SetupTwoFactorAsync(Guid userId);
+    Task EnableTwoFactorAsync(Guid userId, string code);
     Task<AuthResponse> VerifyTwoFactorAsync(string email, string code, string? deviceInfo, string? ipAddress);
     Task DisableTwoFactorAsync(Guid userId, string code);
     Task RequestTwoFactorRecoveryAsync(string email);

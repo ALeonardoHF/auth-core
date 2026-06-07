@@ -15,33 +15,34 @@ public class User
     public bool IsEmailConfirmed { get; private set; }
     public string? TotpSecret { get; private set; }
     public bool IsTwoFactorEnabled { get; private set; }
+    public string? PendingTotpSecret { get; private set; }
 
 
     private readonly List<RefreshToken> _refreshTokens = new();
     public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
 
-    private User() {}
+    private User() { }
 
     public static User Create(string email, string passwordHash, Role role)
     {
-        if(string.IsNullOrWhiteSpace(email))
+        if (string.IsNullOrWhiteSpace(email))
             throw new DomainException("Email is required.");
-        if(string.IsNullOrWhiteSpace(passwordHash))
+        if (string.IsNullOrWhiteSpace(passwordHash))
             throw new DomainException("Password hash is required.");
 
         return new User
         {
-          Id = Guid.NewGuid(),
-          Email = email.ToLowerInvariant().Trim(),
-          PasswordHash = passwordHash,
-          Role = role,
-          IsActive = true,
-          TokenVersion = 1,
-          CreatedAt = DateTime.UtcNow,
-          IsDeleted = false,
-          FailedLoginAttempts = 0,
-          LockedUntil = null,
-          IsEmailConfirmed = false
+            Id = Guid.NewGuid(),
+            Email = email.ToLowerInvariant().Trim(),
+            PasswordHash = passwordHash,
+            Role = role,
+            IsActive = true,
+            TokenVersion = 1,
+            CreatedAt = DateTime.UtcNow,
+            IsDeleted = false,
+            FailedLoginAttempts = 0,
+            LockedUntil = null,
+            IsEmailConfirmed = false
         };
     }
 
@@ -86,6 +87,18 @@ public class User
     public void ConfirmEmail() => IsEmailConfirmed = true;
 
     public void ChangePassword(string newHash) => PasswordHash = newHash;
+
+    public void SetPendingTotpSecret(string secret)
+    {
+        PendingTotpSecret = secret;
+    }
+
+    public void EnableTwoFactor()
+    {
+        TotpSecret = PendingTotpSecret;
+        PendingTotpSecret = null;
+        IsTwoFactorEnabled = true;
+    }
 
     public void EnableTwoFactor(string secret)
     {

@@ -8,6 +8,7 @@ public enum AuditLogEvent
     LogoutAllDevices,
     PasswordResetRequested,
     PasswordResetCompleted,
+    TwoFactorEnabled,
     TwoFactorSetup,
     TwoFactorSuccess,
     TwoFactorFailed,

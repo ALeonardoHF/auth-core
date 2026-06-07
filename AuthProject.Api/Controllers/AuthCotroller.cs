@@ -108,6 +108,16 @@ namespace AuthProject.Controllers
             return Ok(result);
         }
 
+        [Authorize]
+        [HttpPost("2fa/enable")]
+        public async Task<IActionResult> EnableTwoFactor([FromBody] VerifyTwoFactorCodeRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _authService.EnableTwoFactorAsync(userId, request.Code);
+            return Ok("2FA activado correctamente.");
+        }
+
+
         [HttpPost("2fa/verify")]
         public async Task<IActionResult> VerifyTwoFactor([FromBody] VerifyTwoFactorRequest request)
         {
