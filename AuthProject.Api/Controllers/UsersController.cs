@@ -51,5 +51,13 @@ namespace AuthProject.Controllers
             var result = await _userService.GetAllAsync();
             return Ok(result);
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetByIdAsync(Guid id)
+        {
+            var result = await _userService.GetByIdAsync(id);
+            return Ok(result);
+        }
     }
 }
