@@ -58,10 +58,10 @@ public class AuthServiceTests
 
         _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
-        
+
         _hasher.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash))
             .Returns(false);
-        
+
         var act = () => _sut.LoginAsync(new LoginRequest("leo@test.com", "pass"), null, null);
         await act.Should().ThrowAsync<UnauthorizedException>();
     }
@@ -76,8 +76,8 @@ public class AuthServiceTests
             .ReturnsAsync(user);
 
         // Opcional ya que no entra, verifica primero si el usuario esta activo o no.
-       _hasher.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash))
-            .Returns(true);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash))
+             .Returns(true);
 
         var act = () => _sut.LoginAsync(new LoginRequest("leo@test.com", "hash"), null, null);
         await act.Should().ThrowAsync<UnauthorizedException>();
@@ -92,13 +92,13 @@ public class AuthServiceTests
         _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>()))
             .ReturnsAsync(user);
 
-       _hasher.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash))
-            .Returns(true);
+        _hasher.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash))
+             .Returns(true);
 
         _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
-        
+
         _refreshTokenRepo.Setup(r => r.AddAsync(It.IsAny<RefreshToken>())).Returns(Task.CompletedTask);
-        
+
         _tokenService.Setup(t => t.GenerateJwt(user))
             .Returns("jwt-falso");
 
@@ -106,7 +106,7 @@ public class AuthServiceTests
             .Returns("refresh-falso");
 
         var result = await _sut.LoginAsync(new LoginRequest("leo@test.com", "hash"), null, null);
-        
+
         result.Auth!.AccessToken.Should().Be("jwt-falso");
         result.Auth!.RefreshToken.Should().Be("refresh-falso");
         result.Auth!.Role.Should().Be("Client");
@@ -119,10 +119,10 @@ public class AuthServiceTests
         var user = User.Create("leo@test.com", "hash", Role.Client);
 
         _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
-        
+
         _refreshTokenRepo.Setup(r => r.GetByTokenAsync("token-viejo"))
             .ReturnsAsync(RefreshToken.Create(user.Id, "token-viejo", expirationDays: 7));
-        
+
         _userRepo.Setup(r => r.GetByIdAsync(user.Id))
          .ReturnsAsync(user);
 
@@ -133,7 +133,7 @@ public class AuthServiceTests
             .Returns("refresh-falso");
 
         var result = await _sut.RefreshAsync("token-viejo", null, null);
-        
+
         result.AccessToken.Should().Be("jwt-falso");
         result.RefreshToken.Should().Be("refresh-falso");
         result.Role.Should().Be("Client");
@@ -143,11 +143,11 @@ public class AuthServiceTests
     public async Task RefreshToken_Revocado()
     {
         var user = User.Create("leo@test.com", "hash", Role.Client);
-        
+
         var token = RefreshToken.Create(user.Id, "token-revocado", expirationDays: 7);
-        
+
         token.Revoke();
-        
+
         _refreshTokenRepo.Setup(r => r.GetByTokenAsync("token-revocado"))
             .ReturnsAsync(token);
 
@@ -169,9 +169,9 @@ public class AuthServiceTests
     public async Task RefreshToken_Expirado()
     {
         var user = User.Create("leo@test.com", "hash", Role.Client);
-        
+
         var token = RefreshToken.Create(user.Id, "token-expirado", expirationDays: -1);
-        
+
         _refreshTokenRepo.Setup(r => r.GetByTokenAsync("token-expirado"))
             .ReturnsAsync(token);
 
@@ -219,5 +219,119 @@ public class AuthServiceTests
         var act = () => _sut.LogoutAsync("token-revocado");
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task EnableTwoFactor_CodigoValido_Activa()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.SetPendingTotpSecret("SECRET123");
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _totpService.Setup(t => t.Verify("SECRET123", "123456")).Returns(true);
+
+        await _sut.EnableTwoFactorAsync(user.Id, "123456");
+
+        user.IsTwoFactorEnabled.Should().BeTrue();
+        user.TotpSecret.Should().Be("SECRET123");
+        user.PendingTotpSecret.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task EnableTwoFactor_CodigoInvalido_LanzaUnauthorized()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.SetPendingTotpSecret("SECRET123");
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _totpService.Setup(t => t.Verify("SECRET123", "000000")).Returns(false);
+
+        var act = () => _sut.EnableTwoFactorAsync(user.Id, "000000");
+
+        await act.Should().ThrowAsync<UnauthorizedException>();
+    }
+
+    [Fact]
+    public async Task EnableTwoFactor_SinPendingSecret_LanzaDomainException()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+
+        var act = () => _sut.EnableTwoFactorAsync(user.Id, "123456");
+
+        await act.Should().ThrowAsync<DomainException>();
+    }
+
+    [Fact]
+    public async Task DisableTwoFactor_CodigoValido_Desactiva()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.SetPendingTotpSecret("SECRET123");
+        user.EnableTwoFactor();
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _totpService.Setup(t => t.Verify("SECRET123", "123456")).Returns(true);
+
+        await _sut.DisableTwoFactorAsync(user.Id, "123456");
+
+        user.IsTwoFactorEnabled.Should().BeFalse();
+        user.TotpSecret.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DisableTwoFactor_CodigoInvalido_LanzaUnauthorized()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.SetPendingTotpSecret("SECRET123");
+        user.EnableTwoFactor();
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _totpService.Setup(t => t.Verify("SECRET123", "000000")).Returns(false);
+
+        var act = () => _sut.DisableTwoFactorAsync(user.Id, "000000");
+
+        await act.Should().ThrowAsync<UnauthorizedException>();
+    }
+
+    [Fact]
+    public async Task RequestTwoFactorRecovery_EmailInexistente_NoLanzaExcepcion()
+    {
+        _userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+
+        var act = () => _sut.RequestTwoFactorRecoveryAsync("nadie@test.com");
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task ConfirmTwoFactorRecovery_TokenInvalido_LanzaUnauthorized()
+    {
+        _passwordResetTokenRepo.Setup(r => r.GetByTokenAsync(It.IsAny<string>()))
+            .ReturnsAsync((PasswordResetToken?)null);
+
+        var act = () => _sut.ConfirmTwoFactorRecoveryAsync("token-falso", "password");
+
+        await act.Should().ThrowAsync<UnauthorizedException>();
+    }
+
+    [Fact]
+    public async Task ConfirmTwoFactorRecovery_PasswordIncorrecta_LanzaUnauthorized()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+        user.SetPendingTotpSecret("SECRET123");
+        user.EnableTwoFactor();
+
+        var token = PasswordResetToken.Create(user.Id);
+
+        _passwordResetTokenRepo.Setup(r => r.GetByTokenAsync(token.Token)).ReturnsAsync(token);
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _hasher.Setup(h => h.Verify("wrong", user.PasswordHash)).Returns(false);
+
+        var act = () => _sut.ConfirmTwoFactorRecoveryAsync(token.Token, "wrong");
+
+        await act.Should().ThrowAsync<UnauthorizedException>();
     }
 }

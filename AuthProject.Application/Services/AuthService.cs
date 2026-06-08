@@ -314,7 +314,7 @@ public class AuthService : IAuthService
                 userId: user.Id,
                 email: user.Email));
 
-            throw new UnauthorizedAccessException("Código inválido.");
+            throw new UnauthorizedException("Código inválido.");
         }
 
         user.DisableTwoFactor();
@@ -347,7 +347,7 @@ public class AuthService : IAuthService
     {
         var resetToken = await _passwordResetTokenRepository.GetByTokenAsync(token);
         if (resetToken is null || !resetToken.IsValid)
-            throw new UnauthorizedAccessException("Token inválido o expirado");
+            throw new UnauthorizedException("Token inválido o expirado");
 
         var user = await _userRepository.GetByIdAsync(resetToken.UserId);
         if (user is null) throw new NotFoundException("Contraseña incorrecta.");
