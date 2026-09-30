@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 public class UserService : IUserService
 {
@@ -8,6 +9,7 @@ public class UserService : IUserService
     private readonly IEmailService _emailService;
     private readonly string _baseUrl;
     private readonly IAuditLogRepository _auditLogRepository;
+    private readonly ILogger<UserService> _logger;
 
 
     public UserService(
@@ -16,7 +18,8 @@ public class UserService : IUserService
         IEmailConfirmationTokenRepository confirmationTokenRepository,
         IEmailService emailService,
         IConfiguration config,
-        IAuditLogRepository auditLogRepository)
+        IAuditLogRepository auditLogRepository,
+        ILogger<UserService> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
@@ -24,6 +27,7 @@ public class UserService : IUserService
         _emailService = emailService;
         _baseUrl = config["AppSettings:BaseUrl"]!;
         _auditLogRepository = auditLogRepository;
+        _logger = logger;
     }
 
 
@@ -41,7 +45,14 @@ public class UserService : IUserService
 
         var link = $"{_baseUrl}/auth/confirm-email?token={confirmationToken.Token}";
 
-        await _emailService.SendConfirmationEmailAsync(user.Email, link);
+        try
+        {
+            await _emailService.SendConfirmationEmailAsync(user.Email, link);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send confirmation email to {Email}", user.Email);
+        }
 
         await _auditLogRepository.AddAsync(AuditLog.Create(
             AuditLogEvent.UserRegistered,
@@ -65,5 +76,17 @@ public class UserService : IUserService
     }
 
     private static UserResponse ToResponse(User user) =>
-        new(user.Id, user.Email, user.Role.ToString(), user.IsActive, user.CreatedAt, user.IsTwoFactorEnabled);
+        new(user.Id, user.Email, user.Role.ToString(), user.IsActive, user.CreatedAt, user.IsTwoFactorEnabled, user.DisplayName);
+
+    public async Task<UserResponse> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null) throw new NotFoundException("User not found.");
+
+        user.UpdateDisplayName(request.DisplayName);
+        await _userRepository.UpdateAsync(user);
+
+        return ToResponse(user);
+    }
+
 }
