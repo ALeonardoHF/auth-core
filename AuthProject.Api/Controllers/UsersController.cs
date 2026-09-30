@@ -59,5 +59,14 @@ namespace AuthProject.Controllers
             var result = await _userService.GetByIdAsync(id);
             return Ok(result);
         }
+
+        [Authorize]
+        [HttpPatch("me")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var result = await _userService.UpdateProfileAsync(GetUserId(), request);
+            return Ok(result);
+        }
+
     }
 }

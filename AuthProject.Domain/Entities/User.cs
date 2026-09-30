@@ -1,6 +1,7 @@
 public class User
 {
     public Guid Id { get; private set; }
+    public string? DisplayName { get; private set; }
     public string Email { get; private set; } = string.Empty;
     public string PasswordHash { get; private set; } = string.Empty;
     public Role Role { get; private set; }
@@ -110,6 +111,12 @@ public class User
     {
         TotpSecret = null;
         IsTwoFactorEnabled = false;
+    }
+
+    public void UpdateDisplayName(string? displayName)
+    {
+        DisplayName = displayName;
+        UpdatedAt = DateTime.UtcNow;
     }
 
 }

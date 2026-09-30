@@ -334,4 +334,33 @@ public class AuthServiceTests
 
         await act.Should().ThrowAsync<UnauthorizedException>();
     }
+
+    [Fact]
+    public async Task ChangePassword_Correcto()
+    {
+        var user = User.Create("leo@test.com", "hash-viejo", Role.Client);
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+        _hasher.Setup(h => h.Verify("password-viejo", user.PasswordHash)).Returns(true);
+        _hasher.Setup(h => h.Hash("password-nuevo")).Returns("hash-nuevo");
+
+        await _sut.ChangePasswordAsync(user.Id, "password-viejo", "password-nuevo");
+
+        user.PasswordHash.Should().Be("hash-nuevo");
+    }
+
+    [Fact]
+    public async Task ChangePassword_PasswordActualIncorrecta_LanzaUnauthorized()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _hasher.Setup(h => h.Verify("incorrecta", user.PasswordHash)).Returns(false);
+
+        var act = () => _sut.ChangePasswordAsync(user.Id, "incorrecta", "nueva");
+
+        await act.Should().ThrowAsync<UnauthorizedException>();
+    }
+
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Org.BouncyCastle.Ocsp;
 
 namespace AuthProject.Controllers
 {
@@ -201,6 +202,15 @@ namespace AuthProject.Controllers
         {
             await _authService.ConfirmTwoFactorRecoveryAsync(token, password);
             return Content(EmailTemplates.TwoFactorRecoverySuccess(), "text/html");
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = Guid.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+            return Ok("Contraseña actualizada correctamente.");
         }
 
     }

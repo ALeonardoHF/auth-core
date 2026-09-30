@@ -13,5 +13,7 @@ public interface IAuthService
     Task DisableTwoFactorAsync(Guid userId, string code);
     Task RequestTwoFactorRecoveryAsync(string email);
     Task ConfirmTwoFactorRecoveryAsync(string token, string password);
+    Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
 
 }

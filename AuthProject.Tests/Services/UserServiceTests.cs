@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 
 
 namespace AuthProject.Tests.Services;
@@ -30,7 +31,8 @@ public class UserServiceTests
             _confirmationTokenRepo.Object,
             _emailService.Object,
             config,
-            _auditLogRepo.Object);
+            _auditLogRepo.Object,
+            NullLogger<UserService>.Instance);
 
     }
 
@@ -89,4 +91,28 @@ public class UserServiceTests
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
+
+    [Fact]
+    public async Task UpdateProfile_Correcto()
+    {
+        var user = User.Create("leo@test.com", "hash", Role.Client);
+
+        _userRepo.Setup(r => r.GetByIdAsync(user.Id)).ReturnsAsync(user);
+        _userRepo.Setup(r => r.UpdateAsync(It.IsAny<User>())).Returns(Task.CompletedTask);
+
+        var result = await _sut.UpdateProfileAsync(user.Id, new UpdateProfileRequest("Alan H."));
+
+        result.DisplayName.Should().Be("Alan H.");
+    }
+
+    [Fact]
+    public async Task UpdateProfile_UsuarioInexistente_LanzaNotFoundException()
+    {
+        _userRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((User?)null);
+
+        var act = () => _sut.UpdateProfileAsync(Guid.NewGuid(), new UpdateProfileRequest("Alan"));
+
+        await act.Should().ThrowAsync<NotFoundException>();
+    }
+
 }

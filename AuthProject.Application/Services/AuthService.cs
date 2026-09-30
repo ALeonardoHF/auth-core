@@ -393,5 +393,22 @@ public class AuthService : IAuthService
             email: user.Email));
     }
 
+    public async Task ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null) throw new NotFoundException("Usuario no encontrado.");
+
+        if (!_passwordHasher.Verify(currentPassword, user.PasswordHash))
+            throw new UnauthorizedException("Contraseña actual incorrecta.");
+
+        var newHash = _passwordHasher.Hash(newPassword);
+        user.ChangePassword(newHash);
+        await _userRepository.UpdateAsync(user);
+
+        await _auditLogRepository.AddAsync(AuditLog.Create(
+            AuditLogEvent.PasswordResetCompleted,
+            userId: user.Id,
+            email: user.Email));
+    }
 
 }

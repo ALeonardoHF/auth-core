@@ -1,1 +1,1 @@
-public record UserResponse(Guid Id, string Email, string Role, bool IsActive, DateTime CreatedAt, bool IsTwoFactorEnabled);
+public record UserResponse(Guid Id, string Email, string Role, bool IsActive, DateTime CreatedAt, bool IsTwoFactorEnabled, string? DisplayName);
